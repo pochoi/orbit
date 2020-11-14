@@ -13,7 +13,6 @@ from ..constants.palette import QualitativePalette
 from sklearn.model_selection import ParameterGrid
 from orbit.diagnostics.metrics import smape, mape, wmape
 
-
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
