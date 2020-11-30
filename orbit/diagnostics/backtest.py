@@ -13,6 +13,7 @@ from ..constants.palette import QualitativePalette
 from sklearn.model_selection import ParameterGrid
 from orbit.diagnostics.metrics import smape, mape, wmape
 
+
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
@@ -178,7 +179,7 @@ class TimeSeriesSplitter(object):
                 lw=lw,
                 vmin=-0.2,
                 vmax=1.2,
-            )
+                )
 
         # Formatting
         # TODO: do a date_col style if date_col is avaliable
