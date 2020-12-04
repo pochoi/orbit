@@ -248,7 +248,6 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
     else:
         plt.close()
 
-
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None, fontsize=None,
                           incl_trend_params=False, incl_smooth_params=False, is_visible=True):
