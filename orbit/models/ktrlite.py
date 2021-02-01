@@ -333,7 +333,8 @@ class BaseKTRLite(BaseModel):
             knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
-            self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            self._kernel_coefficients = sandwich_kernel(tp, self._knots_tp_coefficients)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
 
     def _set_dynamic_data_attributes(self, df):
