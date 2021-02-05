@@ -44,23 +44,23 @@ def simulate_seasonal_term(periodicity, total_cycles, noise_std=1.,
     return wanted_series
 
 
-def make_synthetic_series(seed=0):
+def make_synthetic_series(seed=0, date_col='week', periodicity=52, total_cycles=4, harmonics=3, freq='7D'):
     """Generate synthetic data with regressors"""
     np.random.seed(seed)
 
     # simulate seasonality
-    seasonality_term = simulate_seasonal_term(periodicity=52, total_cycles=4, harmonics=3)
+    seasonality_term = simulate_seasonal_term(periodicity=periodicity, total_cycles=total_cycles, harmonics=harmonics)
 
     # scale data
     scaler = MinMaxScaler(feature_range=(np.max(seasonality_term), np.max(seasonality_term) * 2))
     seasonality_term = scaler.fit_transform(seasonality_term[:, None])
 
     # datetime index
-    dt = pd.date_range(start='2016-01-04', periods=len(seasonality_term), freq='7D')
+    dt = pd.date_range(start='2016-01-04', periods=len(seasonality_term), freq=freq)
 
     # create df
     df = pd.DataFrame(seasonality_term, columns=['response'], index=dt).reset_index()
-    df = df.rename(columns={'index': 'week'})
+    df = df.rename(columns={'index': date_col})
 
     # make regression
     X, y, coef = make_regression(n_samples=df.shape[0], n_features=6, n_informative=3, random_state=seed, coef=True)
@@ -83,56 +83,3 @@ def make_synthetic_series(seed=0):
     df['response'] = df['response'] * np.linspace(5, 1, df.shape[0])
 
     return df, coef
-
-
-def fourier_series(dates, period, order=3):
-    """ Given dates array, cyclical period and order.  Return a set of fourier series.
-
-    Parameters
-    ----------
-    dates: array-like date-stamp
-    period: int
-    order: int
-
-    Returns
-    -------
-        2D array where each column is a specific order fourier series with sin() or cos().
-    """
-    t = np.array(
-        (dates - datetime(1970, 1, 1))
-            .dt.total_seconds()
-            .astype(np.float)
-    ) / (3600 * 24.)
-    out = list()
-    for i in range(1, order + 1):
-        x = 2.0 * i * np.pi * t / period
-        out.append(np.sin(x))
-        out.append(np.cos(x))
-    out = np.column_stack(out)
-    return out
-
-
-def fourier_series_df(df, date_col, period, order=3):
-    """ Given a data-frame, cyclical period and order.  Return a set of fourier series.
-    Parameters
-    ----------
-    df: pd.DataFrame
-    date_col: str
-    period: int
-    order: int
-
-    Returns
-    -------
-    df: pd.DataFrame
-        data with computed fourier series attached
-    fs_cols: list
-        list of labels derived from fourier series
-    """
-    fs = fourier_series(df[date_col], period, order=order)
-    fs_cols = []
-    for i in range(1, order + 1):
-        fs_cols.append('fs_cos{}'.format(i))
-        fs_cols.append('fs_sin{}'.format(i))
-    fs_df = pd.DataFrame(fs, columns=fs_cols)
-    df = pd.concat([df.reset_index(drop=True), fs_df], axis=1)
-    return df, fs_cols
