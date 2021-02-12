@@ -200,11 +200,6 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     else:
         plt.close()
 
-    if is_visible:
-        plt.show()
-    else:
-        plt.close()
-
     return axes
 
 
