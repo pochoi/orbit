@@ -79,6 +79,7 @@ class BaseKTRLite(BaseModel):
                  level_knot_dates=None,
                  level_knot_length=None,
                  coefficients_knot_length=None,
+                 date_freq=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -98,6 +99,7 @@ class BaseKTRLite(BaseModel):
 
         self.span_coefficients = span_coefficients
         self.rho_coefficients = rho_coefficients
+        self.date_freq = date_freq
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -321,11 +323,12 @@ class BaseKTRLite(BaseModel):
                 x for x in self._level_knot_dates if (x <= df[self.date_col].max()) \
                                                      and (x >= df[self.date_col].min())
             ])
-            infer_freq = pd.infer_freq(df[self.date_col])[0]
+            if self.date_freq is None:
+                self.date_freq = pd.infer_freq(df[self.date_col])[0]
             start_date = self._training_df_meta['training_start']
             self._knots_tp_level = np.array(
-                (get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
-                (get_gap_between_dates(start_date, self._training_df_meta['training_end'], infer_freq) + 1)
+                (get_gap_between_dates(start_date, self._level_knot_dates, self.date_freq) + 1) /
+                (get_gap_between_dates(start_date, self._training_df_meta['training_end'], self.date_freq) + 1)
             )
 
         self._kernel_level = sandwich_kernel(tp, self._knots_tp_level)
