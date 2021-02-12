@@ -179,7 +179,7 @@ class TimeSeriesSplitter(object):
                 lw=lw,
                 vmin=-0.2,
                 vmax=1.2,
-                )
+            )
 
         # Formatting
         # TODO: do a date_col style if date_col is avaliable
