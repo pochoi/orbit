@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from orbit.estimators.stan_estimator import StanEstimatorMAP
-from orbit.models.ktrlite import BaseKTRLite, KTRLiteFull, KTRLiteMAP
+from orbit.models.ktrlite import BaseKTRLite, KTRLiteMAP
 from orbit.diagnostics.metrics import smape
 
 
