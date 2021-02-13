@@ -2,13 +2,12 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, PyroEstimatorMAP
-from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.estimators.stan_estimator import StanEstimatorMAP
 from orbit.models.ktrlite import BaseKTRLite, KTRLiteFull, KTRLiteMAP
 from orbit.diagnostics.metrics import smape
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMAP, PyroEstimatorMAP])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMAP])
 def test_ktrlite_single_seas(make_daily_data, estimator_type):
     train_df, test_df, coef = make_daily_data
 
@@ -33,7 +32,7 @@ def test_ktrlite_single_seas(make_daily_data, estimator_type):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= 0.5
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMAP, PyroEstimatorMAP])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMAP])
 def test_ktrlite_dual_seas(make_daily_data, estimator_type):
     train_df, test_df, coef = make_daily_data
 
