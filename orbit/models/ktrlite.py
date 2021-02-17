@@ -43,8 +43,6 @@ class BaseKTRLite(BaseModel):
         e.g., span 0.1 will produce 10 windows.
     span_coefficients : float between (0, 1)
         window width to decide the number of windows for the regression term
-    rho_coefficients : float
-        sigma in the Gaussian kernel for the regression term
     degree of freedom : int
         degree of freedom for error t-distribution
     level_knot_dates : array like
@@ -72,7 +70,7 @@ class BaseKTRLite(BaseModel):
                  seasonal_knot_scale=0.1,
                  span_level=0.1,
                  span_coefficients=0.3,
-                 rho_coefficients=0.15,
+                 # rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # knot customization
                  level_knot_dates=None,
@@ -97,7 +95,7 @@ class BaseKTRLite(BaseModel):
         self.seasonal_knot_scale = seasonal_knot_scale
 
         self.span_coefficients = span_coefficients
-        self.rho_coefficients = rho_coefficients
+        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # set private var to arg value
@@ -180,6 +178,10 @@ class BaseKTRLite(BaseModel):
 
         if len(self._seasonality_fs_order) != len(self._seasonality):
             raise IllegalArgument('length of seasonality and fs_order not matching')
+
+        for k, order in enumerate(self._seasonality_fs_order):
+            if 2 * order > self._seasonality[k] - 1:
+                raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
 
         if not isinstance(self.seasonal_knot_pooling_scale, list) and isinstance(self.seasonal_knot_pooling_scale * 1.0, float):
             self._seasonal_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * len(self._seasonality)
@@ -307,13 +309,14 @@ class BaseKTRLite(BaseModel):
         # kernel of level calculations
         if self._level_knot_dates is None:
             if self.level_knot_length is not None:
-                # TODO: approximation; can consider directly level_knot_length it as step size
+                # TODO: approximation; can consider level_knot_length directly as step size
                 knots_distance = self.level_knot_length
             else:
                 number_of_knots = round(1 / self.span_level)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
             knots_idx_level = set_knots_tp(knots_distance, self._cutoff)
+            self._knots_idx_level = knots_idx_level
             self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
@@ -339,16 +342,18 @@ class BaseKTRLite(BaseModel):
         # kernel of coefficients calculations
         if self._num_of_regressors > 0:
             if self.coefficients_knot_length is not None:
-                # TODO: approximation; can consider directly coefficients_knot_length as step size
+                # TODO: approximation; can consider coefficients_knot_length directly as step size
                 knots_distance = self.coefficients_knot_length
             else:
                 number_of_knots = round(1 / self.span_coefficients)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
             knots_idx_coef = set_knots_tp(knots_distance, self._cutoff)
+            self._knots_idx_coef = knots_idx_coef
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
-            self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            self._kernel_coefficients = sandwich_kernel(tp, self._knots_tp_coefficients)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
 
     def _set_dynamic_data_attributes(self, df):
@@ -466,7 +471,8 @@ class BaseKTRLite(BaseModel):
         # update seasonal regression matrices
         if self._seasonality and self._regressor_col:
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            kernel_coefficients = sandwich_kernel(new_tp, self._knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
             for idx, cols in enumerate(self._regressor_col_gp):
