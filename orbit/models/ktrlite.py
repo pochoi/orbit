@@ -468,7 +468,8 @@ class BaseKTRLite(BaseModel):
         # update seasonal regression matrices
         if self._seasonality and self._regressor_col:
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            kernel_coefficients = sandwich_kernel(new_tp, self._knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
             for idx, cols in enumerate(self._regressor_col_gp):
