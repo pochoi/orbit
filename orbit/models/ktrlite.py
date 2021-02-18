@@ -12,22 +12,18 @@ from ..constants.constants import (
 
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
-from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from ..utils.timepoints import get_gap_between_dates, set_knots_tp
+from .template import BaseTemplate, MAPTemplate
 
 
-class BaseKTRLite(BaseModel):
+class BaseKTRLite(BaseTemplate):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
 
     Parameters
     ----------
-    response_col : str
-        response column name
-    date_col : str
-        date column name
     seasonality : int, or list of int
         multiple seasonality
     seasonality_fs_order : int, or list of int
@@ -58,11 +54,8 @@ class BaseKTRLite(BaseModel):
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'ktrlite'
-    _supported_estimator_types = None  # set for each model
 
     def __init__(self,
-                 response_col='y',
-                 date_col='ds',
                  seasonality=None,
                  seasonality_fs_order=None,
                  level_knot_scale=0.5,
@@ -79,8 +72,6 @@ class BaseKTRLite(BaseModel):
                  date_freq=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
-        self.response_col = response_col
-        self.date_col = date_col
 
         self.span_level = span_level
         self.level_knot_scale = level_knot_scale
@@ -108,10 +99,8 @@ class BaseKTRLite(BaseModel):
         self._seasonal_knot_scale = None
 
         self._level_knot_dates = self.level_knot_dates
-
         self._degree_of_freedom = degree_of_freedom
 
-        self._model_param_names = list()
         self._training_df_meta = None
         self._model_data_input = dict()
 
@@ -151,16 +140,6 @@ class BaseKTRLite(BaseModel):
         self._knots_tp_coefficients = None
         self._regressor_matrix = None
         self._coefficients_knot_dates = None
-
-        # init posterior samples
-        # `_posterior_samples` is set by `fit()`
-        self._posterior_samples = dict()
-
-        # init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MEAN.value: dict(),
-            PredictMethod.MEDIAN.value: dict(),
-        }
 
     def _set_default_base_args(self):
         """Set default attributes for None
@@ -222,13 +201,6 @@ class BaseKTRLite(BaseModel):
         """model data input based on args at instantiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_seasonality_attributes()
-
-    def _validate_supported_estimator_type(self):
-        if self.estimator_type not in self._supported_estimator_types:
-            msg_template = "Model class: {} is incompatible with Estimator: {}"
-            model_class = type(self)
-            estimator_type = self.estimator_type
-            raise IllegalArgument(msg_template.format(model_class, estimator_type))
 
     def _set_training_df_meta(self, df):
         # Date Metadata
@@ -398,10 +370,6 @@ class BaseKTRLite(BaseModel):
     def _get_model_data_input(self):
         return self._model_data_input
 
-    def is_fitted(self):
-        # if empty dict false, else true
-        return bool(self._posterior_samples)
-
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
         ################################################################
@@ -558,7 +526,7 @@ class BaseKTRLite(BaseModel):
         self._posterior_samples = model_extract
 
 
-class KTRLiteMAP(BaseKTRLite):
+class KTRLiteMAP(BaseKTRLite, MAPTemplate):
     """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
 
     This model only supports MAP estimating `estimator_type`s
@@ -568,52 +536,10 @@ class KTRLiteMAP(BaseKTRLite):
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
 
-        # override init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MAP.value: dict(),
-        }
-
-        # validator model / estimator compatibility
-        self._validate_supported_estimator_type()
-
-    def _set_map_posterior(self):
-        posterior_samples = self._posterior_samples
-
-        map_posterior = {}
-        for param_name in self._model_param_names:
-            param_array = posterior_samples[param_name]
-            # add dimension so it works with vector math in `_predict`
-            param_array = np.expand_dims(param_array, axis=0)
-            map_posterior.update(
-                {param_name: param_array}
-            )
-
-        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
-
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""
         super().fit(df)
         self._set_map_posterior()
 
-    def predict(self, df, decompose=False):
-        # raise if model is not fitted
-        if not self.is_fitted():
-            raise PredictionException("Model is not fitted yet.")
-
-        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
-
-        predicted_dict = self._predict(
-            posterior_estimates=aggregate_posteriors,
-            df=df,
-            include_error=False,
-            decompose=decompose,
-        )
-
-        # must flatten to convert to DataFrame
-        for k, v in predicted_dict.items():
-            predicted_dict[k] = v.flatten()
-
-        predicted_df = pd.DataFrame(predicted_dict)
-        predicted_df = self._prepend_date_column(predicted_df, df)
-
-        return predicted_df
+    def predict(self, df, decompose=False, **kwargs):
+        return self._map_predict(df, self._predict, decompose=decompose)
