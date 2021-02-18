@@ -22,7 +22,7 @@ def test_ktrlite_single_seas(make_daily_data, estimator_type):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -47,7 +47,7 @@ def test_ktrlite_dual_seas(make_daily_data, estimator_type):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95]
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -73,7 +73,7 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95]
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -99,7 +99,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_length):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95]
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -125,7 +125,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, coefficients_knot_length):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95]
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -149,7 +149,10 @@ def test_ktrlite_predict_decompose(make_daily_data):
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df, decompose=True)
 
-    expected_columns = ['date', 'prediction', 'trend', 'seasonality_7', 'seasonality_365.25']
+    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95,
+                                'trend_5', 'trend', 'trend_95',
+                                'seasonality_7_5', 'seasonality_7', 'seasonality_7_95',
+                                'seasonality_365.25_5', 'seasonality_365.25', 'seasonality_365.25_95']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
