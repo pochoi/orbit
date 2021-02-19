@@ -1,6 +1,4 @@
-<div align="center">
-  <a href="https://github.com/uber/orbit"><img src="https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png"></a>
-</div>
+![Orbit banner](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
 
 -------------------------------------------------------------------------------------------------------------------------------------
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
@@ -100,7 +98,7 @@ plot_predicted_data(
 ##  Documentation
 
 - HTML documentation (stable): https://orbit-ml.readthedocs.io/en/stable/
-- HTML documentation (old): (https://uber.github.io/orbit/)
+- HTML documentation (old): https://uber.github.io/orbit/
 
 ## Citation
 
