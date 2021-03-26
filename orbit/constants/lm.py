@@ -16,6 +16,7 @@ class RegressionSamplingParameters(Enum):
     """
     regression component related parameters in posteriors sampling
     """
+    REGRESSION_MEAN = 'alpha'
     REGRESSION_COEFFICIENTS = 'beta'
     RESIDUAL_SIGMA = 'obs_sigma'
-
+    
